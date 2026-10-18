@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Resea Calls Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/assets/app.css">
+</head>
+<body data-admin-email="{{ admin_email }}">
+
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="app-header">
+<div class="brand">
+Resea Calls <span class="hd-badge">Workspace</span>
+</div>
+<div class="account">
+<span class="account-email">{{ admin_email }}</span>
+<button class="btn-logout" type="button">Sign out</button>
+</div>
+</header>
+<main id="main" class="page-shell">
+<div class="page-intro">
+<div>
+<span class="eyebrow">Administration</span>
+<h1>Manage calls</h1>
+<p>Import contacts, approve callers, and review responses.</p>
+</div>
+<span class="badge">Administration</span>
+</div>
+<nav id="nav" class="workspace-nav" aria-label="Workspace">
+<button type="button" class="tab active" data-pane="overview" aria-current="page" aria-controls="pane-overview">Overview</button>
+<button type="button" class="tab" data-pane="contacts" aria-controls="pane-contacts">Contacts</button>
+<button type="button" class="tab" data-pane="results" aria-controls="pane-results">Results</button>
+<button type="button" class="tab" data-pane="volunteers" aria-controls="pane-volunteers">Callers</button>
+<a href="/survey">Survey questions ↗</a>
+</nav>
+<p id="admin-message" class="api-message error" role="status" aria-live="polite"></p>
+  <!-- Overview -->
+  <section class="pane active" id="pane-overview" aria-label="Overview">
+<div class="card hero-card">
+<div>
+<span class="eyebrow">Survey setup</span>
+<h2>Set your survey questions</h2>
+<p>Add or edit the questions callers will ask. Earlier responses keep their original questions.</p>
+</div>
+<a class="button" href="/survey">Manage survey questions →</a>
+</div>
+<h2>Call progress</h2>
+<p class="small">Live totals from your contact list and saved calls.</p>
+    <div class="stats-grid" id="stats-grid">
+      <!-- filled by JS -->
+      <div class="stat">
+<div class="stat-num">…</div>
+<div class="stat-label">Total</div>
+</div>
+    </div>
+
+<div class="setup-grid">
+<a href="#contacts" class="setup-item" data-goto="contacts">
+<span class="step-number">1</span>
+<strong>Add your contacts</strong>
+<p>Import a CSV to fill the calling list.</p>
+</a>
+<a href="#volunteers" class="setup-item" data-goto="volunteers">
+<span class="step-number">2</span>
+<strong>Approve callers</strong>
+<p>Approve the email addresses on your team.</p>
+</a>
+<a href="#results" class="setup-item" data-goto="results">
+<span class="step-number">3</span>
+<strong>Review results</strong>
+<p>Review answers and download your results.</p>
+</a>
+</div>
+</section>
+  <!-- Contacts -->
+  <div class="pane" id="pane-contacts">
+    <div class="card">
+      <span class="eyebrow">Your calling list</span>
+<h2>Add contacts</h2>
+<p class="small">Choose a CSV with <code>name</code> and <code>phone</code> columns. Up to 10,000 contacts, maximum 5 MB.</p>
+      <form id="upload-form">
+        <div style="margin-bottom:10px;">
+          <label for="csv-file">Contact list (CSV with name and phone)</label>
+<input type="file" id="csv-file" accept=".csv,text/csv" required />
+        </div>
+        <button type="submit" class="btn btn-primary" id="upload-btn">Upload contacts</button>
+      </form>
+      <div id="upload-msg" class="msg" role="status" aria-live="polite"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <h2 style="margin:0;">Contact list</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Status</th>
+<th>Calls</th>
+<th>Last outcome</th>
+</tr>
+          </thead>
+          <tbody id="contacts-body">
+            <tr>
+<td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td>
+</tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button class="btn btn-secondary" id="contacts-prev-btn" disabled>← Prev</button>
+        <span id="contacts-page-info">—</span>
+        <button class="btn btn-secondary" id="contacts-next-btn" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="pane" id="pane-results">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <h2 style="margin:0;">Call results</h2>
+        <a class="btn btn-secondary" href="/api/results/export.csv" download="pb_results.csv">
+          &#8595; Export CSV
+        </a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Caller</th>
+<th>Outcome</th>
+<th>Notes and survey answers</th>
+<th>Submitted</th>
+</tr>
+          </thead>
+          <tbody id="results-body">
+            <tr>
+<td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td>
+</tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button class="btn btn-secondary" id="prev-btn" disabled>← Prev</button>
+        <span id="page-info">—</span>
+        <button class="btn btn-secondary" id="next-btn" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Callers -->
+  <div class="pane" id="pane-volunteers">
+    <div class="card">
+      <span class="eyebrow">Your team</span>
+<h2>Approve a caller</h2>
+<p class="small">They can sign in with an email code once you add them. Set an expiry for temporary access.</p>
+      <div class="row">
+        <div style="flex:2;">
+<label for="new-vol">Caller email</label>
+<input type="email" id="new-vol" placeholder="caller@example.com" />
+</div>
+        <div style="flex:1;">
+          <label for="new-vol-expiry" style="font-size:11px;color:var(--muted);margin-bottom:3px;display:block;">Expires (optional)</label>
+          <input type="date" id="new-vol-expiry" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:14px;background:#fafcf9;" />
+        </div>
+        <button class="btn btn-primary" id="add-vol-btn">Approve caller</button>
+      </div>
+      <div id="vol-msg" class="msg" role="status" aria-live="polite"></div>
+      <ul class="people-list" id="vol-list">
+        <li style="font-size:13px;color:var(--muted);">Loading…</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<script src="/static/admin.js"></script>
+</body>
+</html>

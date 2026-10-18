@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calling · Resea Calls</title>
+<link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="app-header">
+<div class="brand">
+Resea Calls <span class="hd-badge">Caller</span>
+</div>
+<div class="account">
+<span class="account-email">{{ volunteer_name }}</span>
+<button class="btn-logout" type="button">Sign out</button>
+</div>
+</header>
+<main id="main" class="page-shell field-shell">
+<div class="page-intro">
+<div>
+<span class="eyebrow">Calling</span>
+<h1>Make calls</h1>
+<p>Call the assigned contact, then save the outcome and answers.</p>
+</div>
+</div>
+<p id="api-message" class="api-message call-status" role="status" aria-live="polite"></p>
+<div class="panel">
+<section id="state-idle" class="state">
+<div class="welcome-panel">
+<div class="welcome-icon" aria-hidden="true">↗</div>
+<h2>Get a contact</h2>
+<p>Select “Get next contact” to start. Only one contact is assigned at a time.</p>
+<div class="call-steps">
+<div>
+<b>01 · Connect</b>Open your phone’s dialler.</div>
+<div>
+<b>02 · Listen</b>Follow your team’s questions.</div>
+<div>
+<b>03 · Record</b>Save the outcome and continue.</div>
+</div>
+<button class="btn-primary">Get next contact</button>
+</div>
+</section>
+<section id="state-loading" class="state">
+<div class="welcome-panel" role="status">
+<div class="spinner" aria-hidden="true">
+</div>
+<h2>Finding your next contact…</h2>
+<p>This should only take a moment.</p>
+</div>
+</section>
+<section id="state-assigned" class="state">
+<div class="call-grid">
+<div class="contact-card">
+<span class="eyebrow">01 · Make the call</span>
+<h2>Your next conversation</h2>
+<p class="small">Contact name</p>
+<div class="name-image-wrap" id="name-wrap">
+<img id="name-img" alt="Assigned contact name, shown as an image" draggable="false" tabindex="-1">
+</div>
+<a id="call-btn" class="btn-call" href="#">
+<span aria-hidden="true">↗</span>Call now</a>
+<p class="call-guidance">Opens your device’s phone app. Your usual call charges and caller ID apply.</p>
+</div>
+<div class="outcome-card">
+<span class="eyebrow">02 · Record the conversation</span>
+<h2>How did the call go?</h2>
+<p class="small">Choose an outcome to see the next step.</p>
+<div class="outcome-btns" role="group" aria-label="Call outcome">
+<button class="outcome-btn" aria-pressed="false" data-value="answered">Answered</button>
+<button class="outcome-btn" aria-pressed="false" data-value="not_answered">No answer</button>
+<button class="outcome-btn" aria-pressed="false" data-value="refused">Declined</button>
+</div>
+<p id="outcome-help" class="small" role="status"></p>
+<div id="survey-questions">
+</div>
+<div class="toolbar">
+<span id="question-count" class="small">
+</span>
+<button id="reload-survey" class="quiet-btn" type="button">Reload questions</button>
+</div>
+<label for="comments">Notes (optional)</label>
+<textarea maxlength="2000" id="comments" placeholder="Relevant feedback or agreed follow-up for your campaign" rows="3">
+</textarea>
+<p id="save-hint" class="small" style="margin:14px 0 0">Choose an outcome to continue.</p>
+<div id="submit-error" role="alert" class="submit-error"></div>
+<button class="btn-primary" id="submit-btn" disabled>Save &amp; next contact</button>
+</div>
+</div>
+</section>
+<section id="state-cooldown" class="state">
+<div class="welcome-panel">
+<div class="cooldown-ring">
+<svg width="90" height="90" viewBox="0 0 90 90" aria-hidden="true">
+<circle class="ring-bg" cx="45" cy="45" r="38"/>
+<circle class="ring-fill" id="ring-fill" cx="45" cy="45" r="38" stroke-dasharray="238.76" stroke-dashoffset="0"/>
+</svg>
+<span class="cooldown-num" id="countdown-num">20</span>
+</div>
+<h2>A moment between conversations</h2>
+<p>Your next contact will appear automatically when the timer finishes.</p>
+<button class="btn-primary" id="cooldown-btn" disabled>Next contact in <span id="countdown-label">20</span>s</button>
+</div>
+</section>
+<section id="state-exhausted" class="state">
+<div class="welcome-panel">
+<div class="welcome-icon" aria-hidden="true">✓</div>
+<h2>You’re up to date</h2>
+<p>No contacts are available right now. Your organiser may add more, or another caller may still be working through theirs.</p>
+<button id="check-contacts" class="secondary">Check for more contacts</button>
+</div>
+</section>
+</div>
+</main><script src="/pb/static/call.js"></script></body></html>

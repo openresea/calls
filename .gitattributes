@@ -1,0 +1,18 @@
+* text=auto
+
+.gitattributes text eol=lf
+.gitignore text eol=lf
+
+*.md text eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.sql text eol=lf
+*.tf text eol=lf
+*.tfvars text eol=lf
+*.tfvars.example text eol=lf
+*.tfvars.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf

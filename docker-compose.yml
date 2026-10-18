@@ -1,0 +1,63 @@
+name: calls
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: calls
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/configure.py}
+      ADMIN_DB_PASSWORD: ${ADMIN_DB_PASSWORD:?Generate database credentials}
+      CALLER_DB_PASSWORD: ${CALLER_DB_PASSWORD:?Generate database credentials}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set the first administrator}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./app/sql:/schemas:ro
+      - ./scripts/docker-init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U postgres -d calls']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  caller:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: ['127.0.0.1:8003:8001']
+    environment: &common
+      APP_MODULE: app.phonebanking.main:app
+      PORT: '8001'
+      OPS_DB_HOST: db
+      OPS_DB_NAME: calls
+      OPS_DB_USER: calls_caller
+      OPS_DB_PASS: ${CALLER_DB_PASSWORD}
+      FERNET_KEY: ${FERNET_KEY:?Generate an encryption key}
+      EMAIL_CODE_SECRET: ${EMAIL_CODE_SECRET:?Generate a code secret}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      SMTP_HOST: ${SMTP_HOST:?Configure SMTP}
+      SMTP_FROM: ${SMTP_FROM:?Configure a sender address}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    read_only: true
+    tmpfs: ['/tmp:size=16m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+  admin:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: ['127.0.0.1:8004:8002']
+    environment:
+      <<: *common
+      APP_MODULE: app.admin.main:app
+      PORT: '8002'
+      OPS_DB_USER: calls_admin
+      OPS_DB_PASS: ${ADMIN_DB_PASSWORD}
+    read_only: true
+    tmpfs: ['/tmp:size=16m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+volumes:
+  pgdata:

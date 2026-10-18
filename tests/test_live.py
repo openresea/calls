@@ -346,6 +346,32 @@ def test_csv_import_and_wrong_origin(live_db):
     assert db.admin.get("/api/survey", headers={"Host": "evil.test"}).status_code == 400
 
 
+def test_contacts_without_names_and_sample_file(live_db):
+    db = live_db
+    r = db.admin.post(
+        "/api/upload",
+        files={
+            "file": (
+                "contacts.csv",
+                "Name,Phone\n,+447700900010\nPat Example,+447700900011\nNo Number,\n",
+                "text/csv",
+            )
+        },
+    )
+    assert (
+        r.status_code == 200 and r.json()["inserted"] == 2
+    )  # row with no number skipped
+    names = {c["name"] for c in db.admin.get("/api/contacts").json()["contacts"]}
+    assert {"Name not known", "Pat Example"} <= names
+    with open("samples/contacts.example.csv", "rb") as f:
+        r = db.admin.post("/api/upload", files={"file": ("sample.csv", f, "text/csv")})
+    assert r.status_code == 200, r.text
+    missing = db.admin.post(
+        "/api/upload", files={"file": ("x.csv", "name\nPat\n", "text/csv")}
+    )
+    assert missing.status_code == 400 and "phone column" in missing.json()["detail"]
+
+
 def test_code_consumed_once_under_concurrency(live_db, inbox):
     body = request_code(live_db.caller, inbox, False)
     with ThreadPoolExecutor(max_workers=2) as executor:

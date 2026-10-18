@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 import secrets
 from typing import Any
@@ -8,6 +9,8 @@ from urllib.parse import urlparse
 from fastapi import HTTPException, Request
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+logger = logging.getLogger(__name__)
+BAD_REQUEST = "Something went wrong there. Please reload the page and try again."
 UNSAFE_HTTP_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 DEFAULT_ALLOWED_HOSTS = (
@@ -108,14 +111,14 @@ async def json_object_body(
     if content_length:
         try:
             if int(content_length) > limit:
-                raise HTTPException(413, "Request body too large")
+                raise HTTPException(413, "That's more than we can accept in one go.")
         except ValueError as exc:
-            raise HTTPException(400, "Invalid Content-Length") from exc
+            raise HTTPException(400, BAD_REQUEST) from exc
 
     body = bytearray()
     async for chunk in request.stream():
         if len(body) + len(chunk) > limit:
-            raise HTTPException(413, "Request body too large")
+            raise HTTPException(413, "That's more than we can accept in one go.")
         body.extend(chunk)
     if not body:
         return {}
@@ -123,11 +126,22 @@ async def json_object_body(
     try:
         data = json.loads(body.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise HTTPException(400, "Invalid JSON body") from exc
+        raise HTTPException(400, BAD_REQUEST) from exc
 
     if not isinstance(data, dict):
-        raise HTTPException(400, "JSON object required")
+        raise HTTPException(400, BAD_REQUEST)
     return data
+
+
+async def json_body(request: Request) -> dict[str, Any]:
+    """Dependency: read the body on the event loop so the endpoint can be a
+    plain `def` and run its blocking database work in the threadpool."""
+    return await json_object_body(request)
+
+
+def client_ip(request: Request) -> str:
+    """Use ASGI's peer, set only by the server's trusted proxy configuration."""
+    return str(request.client.host) if request.client else "unknown"
 
 
 def install_security(app):
@@ -145,7 +159,12 @@ def install_security(app):
         if request.method in UNSAFE_HTTP_METHODS and not same_origin_write_request(
             request
         ):
-            response = JSONResponse({"detail": "Access denied"}, status_code=403)
+            response = JSONResponse(
+                {
+                    "detail": "That request was blocked for security reasons. Please reload the page and try again."
+                },
+                status_code=403,
+            )
         else:
             response = await call_next(request)
         nonce = request.state.csp_nonce
@@ -165,12 +184,18 @@ def install_security(app):
 
     @app.exception_handler(StorageUnavailableError)
     async def unavailable(request, exc):
+        logger.warning("Storage unavailable: %s", exc)
         return JSONResponse(
-            {"detail": "Service temporarily unavailable"}, status_code=503
+            {
+                "detail": "We're having trouble reaching the database. Please try again in a moment."
+            },
+            status_code=503,
         )
 
     @app.exception_handler(Exception)
     async def unexpected(request, exc):
+        logger.exception("Unhandled error")
         return JSONResponse(
-            {"detail": "Something went wrong. Please try again."}, status_code=500
+            {"detail": "Sorry, something went wrong on our side. Please try again."},
+            status_code=500,
         )

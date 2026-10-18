@@ -1,59 +1,57 @@
 # Resea Calls
 
-A self-hosted calling and survey app for nonprofits, community groups, and campaigns. Free for permitted nonprofit and other noncommercial use under the [PolyForm Noncommercial licence](LICENSE). Commercial use outside those permissions requires a separate agreement; see [commercial licensing](COMMERCIAL.md). You pay for your own hosting, email service, and telephone calls.
+A free, self-hosted phone banking app for volunteer calling. It's built for charities, community groups and campaigns: upload a list of people to call, approve your volunteers, and each caller gets one contact at a time and records the conversation and survey answers on their phone or computer. You host it yourself, so your data stays with you.
 
-Administrators approve callers, import contacts, manage survey questions, and export results. Callers sign in using a code sent to an approved email address, receive one contact at a time, and record the conversation on a phone or computer.
+It's free for any non-commercial use, and all the code is public. Have a look at the [screenshots](docs/screenshots.md).
 
-See the [screenshots](docs/screenshots.md).
-
-Source: [openresea/calls](https://github.com/openresea/calls). Commercial enquiries: [resea@tuta.io](mailto:resea@tuta.io).
-
-## Features
-
-- Email codes work with ordinary email providers; access requires administrator approval. Codes expire after 10 minutes, work once, and lock after five incorrect attempts.
-- A visual question editor supports written answers, multiple choice, and Yes / No / Not sure. Add, edit, reorder, remove, and restore questions with a caller preview.
-- Removed questions and changes to wording do not erase historical answers. Submissions retain the question wording and choices used at the time.
-- Contact names, phone numbers, survey answers, and notes are encrypted in PostgreSQL. Admin and caller services use separate database roles.
-- One active assignment per caller, a 20-second interval between assignments, and a 30-minute assignment expiry. Duplicate submissions are handled without duplicating results.
-- Responsive caller interface, keyboard focus indicators, labelled controls, and visible error messages.
+Source: [openresea/calls](https://github.com/openresea/calls) · Questions: [resea@tuta.io](mailto:resea@tuta.io)
 
 ![Survey question editor](docs/screenshots/survey-builder.png)
 
-## Local setup
+## What it does
 
-Requires Python 3 and Docker with Compose. These instructions create a fresh database.
+- **Sign in with email.** Callers sign in with any email address and a six-digit code, once an organiser has approved them. No passwords to remember.
+- **One contact at a time.** Each caller gets the next person on the list, taps to dial, and saves the outcome before moving on. There's a short 20-second break between calls, and a call left open is handed back after 30 minutes.
+- **Your own questions.** Add written, multiple-choice or yes/no questions, and mark them as required or optional. Change them any time; earlier answers keep the wording they were given with.
+- **Private by default.** Names, phone numbers, answers and notes are encrypted in the database. Names are shown to callers as an image and numbers open straight in the phone's dialler, which makes casual copying harder.
+- **Names are optional.** If you only have a phone number for someone, that's fine. Callers will see "Name not known".
+- **Safe on bad signal.** If a save fails and the caller presses save again, the call is only recorded once.
+- **Results.** See progress at a glance and download everything as a CSV.
 
-```sh
-python3 scripts/configure.py
-```
+## Try it on your computer
 
-The helper asks for the first administrator's email, a verified sender address, and your SMTP server. It creates `.env` with fresh random secrets and owner-only file permissions. It refuses to overwrite an existing file. Edit `.env` to supply your SMTP username/password and any provider-specific settings. Use `SMTP_SECURITY=starttls` with port 587 or `ssl` with port 465. Plaintext SMTP is unsupported.
+You'll need Docker, and Python 3 for the setup script.
 
-```sh
-docker compose up --build -d
-docker compose ps
-```
+1. **Get an email account for sending codes.** Any provider with SMTP works. Make sure the sender address is verified. The app only sends over encrypted connections (STARTTLS on port 587, or `SMTP_SECURITY=ssl` on port 465).
+2. **Run the setup script:** `python3 scripts/configure.py`. It asks for your email, the sender address and the SMTP server, then writes a `.env` file with fresh random passwords and an encryption key. It never overwrites an existing `.env`.
+3. **Add your SMTP login** to `.env` (`SMTP_USERNAME` and `SMTP_PASSWORD`).
+4. **Start it:** `docker compose up --build -d`
+5. **Open it:** the organiser side is at **http://localhost:8004/login** and callers use **http://localhost:8003/pb/login**. Use `localhost`, because sign-in cookies need it.
 
-- Caller: `http://localhost:8003/pb/login`
-- Administration: `http://localhost:8004/login`
+Already running an older install under the name `open-calls`? Add `COMPOSE_PROJECT_NAME=open-calls` to `.env` so it keeps using your existing database.
 
-Cookies are always Secure. Local development uses the browser's localhost exception; use a local HTTPS reverse proxy if your browser does not support that exception. Public deployments require HTTPS.
+Only the email in `ADMIN_EMAIL` gets organiser access to begin with, and only when the database is first created. After that, manage access from the organiser pages. **Keep the database volume and the `FERNET_KEY` safe**: without the key, the encrypted names, numbers and answers can't be read.
 
-On first startup the database initializes its schema, restricted service roles, and the administrator specified in `.env`. Later changes to `ADMIN_EMAIL` or database passwords in `.env` do not change an existing database; use the admin interface for access management and an explicit database credential rotation for passwords. Preserve the PostgreSQL volume and encryption key.
+### Your first calls
 
-Sign into administration, approve caller email addresses, import a CSV with `name,phone` columns, then open **Manage survey questions**. [The sample contacts](samples/contacts.example.csv) are fictional. Import limits are 5 MB and 10,000 rows. Test with fictional data first.
+1. Sign in on the organiser side and approve your callers' email addresses.
+2. Open **Manage survey questions** and add a few questions.
+3. Upload a CSV of people to call. It needs a `phone` column; `name` is optional. Try [the sample contacts](samples/contacts.example.csv), which are all made up. Files can be up to 5 MB and 10,000 contacts.
+4. Your callers sign in and start calling.
 
-Changing a survey while a caller is working asks them to reload questions before saving. Answers that still match the updated choices are retained in the page. Unsaved answers are held only in the page and are lost if it closes or reloads.
+If you change the questions while someone is mid-call, they're asked to reload before saving, and any answers that still fit are kept.
 
-## Hosting
+## Putting it online
 
-The Compose file binds services to loopback and keeps PostgreSQL off host ports. Put admin and caller services on **separate HTTPS hostnames**, behind a reverse proxy; set `ALLOWED_HOSTS` to the exact hostnames. Keep upstream ports private. Configure trusted proxy IPs and forwarded scheme handling explicitly so same-origin checks see HTTPS; never trust arbitrary forwarded headers from the internet. Apply an edge request/body limit and rate limiting, and restrict the admin hostname with a passkey/MFA-capable access gateway before using sensitive data.
+The database stays inside Docker's private network, and both web ports only listen on your own machine. To put it on the internet you'll need:
 
-SMTP credentials, DNS/sender verification, HTTPS, backups, monitoring, and retention procedures are operator responsibilities. Use a private database network; for a remote database use certificate-verified TLS (`OPS_DB_SSLMODE=verify-full` plus the appropriate libpq CA configuration).
+- HTTPS, with **a separate address for the organiser and caller sides**, and `ALLOWED_HOSTS` set to exactly those names
+- a reverse proxy in front, with `FORWARDED_ALLOW_IPS` set to its address so rate limits see real visitors
+- ideally, something with passkeys or 2FA in front of the organiser side before you use real contact data
 
-Email sign-in depends on mailbox security and is not phishing-resistant MFA. Image-rendered names and `tel:` redirects reduce casual copying but cannot prevent screenshots, OCR, browser inspection, or phone-number capture. Read [SECURITY.md](SECURITY.md) before handling real contact data.
+For a database on another machine, use `OPS_DB_SSLMODE=verify-full`. [SECURITY.md](SECURITY.md) walks through what the app protects and what's left to you.
 
-## Development and verification
+## Running the tests
 
 ```sh
 python3 -m venv .venv
@@ -63,7 +61,7 @@ python3 -m venv .venv
 .venv/bin/ruff check app tests scripts
 ```
 
-Without a test database, integration and browser tests skip. For full verification use an **isolated disposable PostgreSQL 17 cluster**, never a production or shared cluster: the fixture creates/drops temporary databases and resets the shared test roles `calls_admin` and `calls_caller`.
+The quick checks run without a database. The rest need a **throwaway** PostgreSQL 17 server that's safe to wipe, because they create and delete databases and reset the `calls_admin` and `calls_caller` logins. Never point them at a real one.
 
 ```sh
 export TEST_DATABASE_DSN='host=127.0.0.1 port=55439 user=postgres dbname=postgres'
@@ -71,10 +69,18 @@ export TEST_DATABASE_DSN='host=127.0.0.1 port=55439 user=postgres dbname=postgre
 RUN_BROWSER_TESTS=1 .venv/bin/python -m pytest -q
 ```
 
-Browser tests intercept requests into the real ASGI apps backed by that database, mock email delivery, and use fictional contacts. They never place a telephone call. See [verification notes](docs/verification.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
-
-If upgrading an existing Compose installation, set `COMPOSE_PROJECT_NAME=open-calls` in `.env` to keep using its database volume.
+The browser test uses made-up contacts, never places a real call and sends no real emails. See the [testing notes](docs/verification.md) for what is and isn't covered.
 
 ## Licence
 
-Source-available under [PolyForm Noncommercial 1.0.0](LICENSE). Keep the licence and [required notice](NOTICE) with copies. For uses outside its permissions, see [commercial licensing](COMMERCIAL.md). Third-party dependencies retain their own licences.
+Resea Calls is free to use, change and share for any non-commercial purpose, under the [PolyForm Noncommercial licence](LICENSE). Charities, community groups, schools, public bodies and individuals are all welcome. You'll pay your own hosting, email and phone providers. Please keep the licence and the [notice](NOTICE) with any copies.
+
+Because the licence rules out commercial use, it isn't "open source" in the strict OSI sense. The code is all public and you can do almost anything with it, as long as you're not making money from it. If you'd like to use it commercially, please [get in touch](COMMERCIAL.md) first.
+
+## Supporting the project
+
+Resea Calls is free and made by volunteers. If it's helped your group and you'd like to chip in, you can [buy us a coffee on Ko-fi](https://ko-fi.com/openresea). Every bit helps keep it going. Thank you!
+
+## Dependencies
+
+Dependencies are pinned with checksums in `requirements.txt`. To update them, edit `requirements.in`, then run `uv pip compile requirements.in --python-version 3.12 --generate-hashes --output-file requirements.txt`, check the result with `pip-audit`, and run the tests again.

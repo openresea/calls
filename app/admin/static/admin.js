@@ -15,8 +15,8 @@ async function loadStats() {
         [d.assigned, "In progress"],
         [d.done, "Done"],
         [d.answered, "Answered"],
-        [d.not_answered, "No Answer"],
-        [d.refused, "Refused"],
+        [d.not_answered, "No answer"],
+        [d.refused, "Declined"],
         [d.total_calls, "Total calls"],
     ];
     document.getElementById("stats-grid").innerHTML = entries.map(([n, label]) => `
@@ -114,15 +114,15 @@ async function uploadContacts(evt) {
         }
         const d = await r.json();
         if (r.ok && d.ok) {
-            showMsg("upload-msg", "ok", `Uploaded ${d.inserted} contact${d.inserted !== 1 ? "s" : ""}.`);
+            showMsg("upload-msg", "ok", `Done! ${d.inserted} contact${d.inserted !== 1 ? "s" : ""} added to your calling list.`);
             document.getElementById("upload-form").reset();
             loadStats();
             loadContacts(0);
         } else {
-            showMsg("upload-msg", "err", d.detail || "Upload failed.");
+            showMsg("upload-msg", "err", typeof d.detail === "string" ? d.detail : "We couldn't upload that file. Please check it and try again.");
         }
     } catch (_) {
-        showMsg("upload-msg", "err", "Network error.");
+        showMsg("upload-msg", "err", "We lost the connection. Please check it and try again.");
     } finally {
         btn.disabled = false;
         btn.textContent = "Upload contacts";
@@ -180,17 +180,17 @@ async function addVolunteer() {
         loadVolunteers();
         showMsg("vol-msg", "ok", "Caller approved. They can now sign in with their email.");
     } else {
-        showMsg("vol-msg", "err", "Failed to add.");
+        showMsg("vol-msg", "err", "We couldn't add that caller. Please check the email address and try again.");
     }
 }
 
 async function removeVolunteer(email) {
-    if (!confirm("Remove caller " + email + "?")) return;
+    if (!confirm("Remove " + email + "? They'll be signed out and won't be able to make calls.")) return;
     const d = await api("/api/volunteers/" + encodeURIComponent(email), {
         method: "DELETE"
     });
     if (d && d.ok) loadVolunteers();
-    else showMsg("vol-msg", "err", "Failed to remove.");
+    else showMsg("vol-msg", "err", "We couldn't remove that caller. Please try again.");
 }
 
 // Logout
@@ -217,7 +217,7 @@ async function api(url, opts = {}) {
         }
         if (!r.ok) {
             const error = await r.json().catch(() => ({}));
-            document.getElementById('admin-message').textContent = typeof error.detail === 'string' ? error.detail : 'Could not load this information. Please try again.';
+            document.getElementById('admin-message').textContent = typeof error.detail === 'string' ? error.detail : 'Sorry, we couldn\'t load this. Please try again.';
             return null;
         }
         return await r.json();
@@ -252,8 +252,8 @@ function fmtDate(iso) {
 function fmtOutcome(o) {
     return {
         answered: "Answered",
-        not_answered: "No Answer",
-        refused: "Refused"
+        not_answered: "No answer",
+        refused: "Declined"
     } [o] || o;
 }
 

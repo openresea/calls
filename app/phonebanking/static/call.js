@@ -97,11 +97,11 @@ function initiateCall(evt) {
 async function submitOutcome() {
     if (submitting) return;
     if (!survey) {
-        showSubmitError("Load the survey questions before saving.");
+        showSubmitError("The questions are still loading. Give it a moment, then save.");
         return;
     }
     if (!selectedOutcome) {
-        showSubmitError("Please select an outcome first.");
+        showSubmitError("Please choose how the call went first.");
         return;
     }
     const btn = document.getElementById("submit-btn");
@@ -127,7 +127,7 @@ async function submitOutcome() {
 
     if (!r) return;
     if (!r.ok) {
-        showSubmitError("Submission failed \u2014 please try again.");
+        showSubmitError("We couldn't save that. Your answers are still here, so just try again.");
         return;
     }
 
@@ -205,7 +205,7 @@ async function apiFetch(url, options = {}) {
             return null;
         }
         if (!r.ok) {
-            let detail = 'Request failed. Please try again.';
+            let detail = 'Something went wrong there. Please try again.';
             try {
                 const body = await r.json();
                 if (typeof body.detail === 'string') detail = body.detail;
@@ -219,8 +219,8 @@ async function apiFetch(url, options = {}) {
         return await r.json();
     } catch (e) {
         document.getElementById('api-message').className = 'call-status error';
-        document.getElementById('api-message').textContent = 'Connection lost. Your answers are still here. Please retry.';
-        if (url.includes('/submit/')) showSubmitError('Connection lost. Your answers are still here. Please retry.');
+        document.getElementById('api-message').textContent = 'We lost the connection. Your answers are still here, so just try again.';
+        if (url.includes('/submit/')) showSubmitError('We lost the connection. Your answers are still here, so just try again.');
         return null;
     }
 }

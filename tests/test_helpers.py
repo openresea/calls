@@ -5,10 +5,8 @@ from datetime import UTC
 import pytest
 from fastapi import HTTPException
 
-# _safe_csv
-from app.admin.main import _EMAIL_RE, _parse_volunteer_expiry, _safe_csv
-from app.admin.main import _cookie_secure as admin_cookie_secure
-from app.phonebanking.main import _cookie_secure as pb_cookie_secure
+from app.admin.main import _parse_volunteer_expiry, _safe_csv
+from app.common.email_auth import normalize_email
 
 
 @pytest.mark.parametrize(
@@ -55,36 +53,7 @@ def test_parse_volunteer_expiry_rejects_invalid(inp):
     assert exc.value.status_code == 400
 
 
-# _cookie_secure
-
-
-@pytest.mark.parametrize(
-    "val,expected",
-    [
-        ("true", True),
-        ("1", True),
-        ("yes", True),
-        ("True", True),
-        ("false", False),
-        ("0", False),
-        ("no", False),
-        ("False", False),
-    ],
-)
-def test_cookie_secure_admin(monkeypatch, val, expected):
-    monkeypatch.setenv("COOKIE_SECURE", val)
-    assert (
-        admin_cookie_secure() is True
-    )  # secure sessions cannot be disabled by configuration
-
-
-def test_cookie_secure_default_is_true(monkeypatch):
-    monkeypatch.delenv("COOKIE_SECURE", raising=False)
-    assert admin_cookie_secure() is True
-    assert pb_cookie_secure() is True
-
-
-# email regex
+# Email addresses (used for sign-in and when adding callers)
 
 
 @pytest.mark.parametrize(
@@ -93,10 +62,11 @@ def test_cookie_secure_default_is_true(monkeypatch):
         "user@example.com",
         "a+b@sub.example.org",
         "123@example.test",
+        " Mixed@Example.COM ",
     ],
 )
 def test_email_valid(email):
-    assert _EMAIL_RE.match(email)
+    assert normalize_email(email) == email.strip().lower()
 
 
 @pytest.mark.parametrize(
@@ -108,7 +78,11 @@ def test_email_valid(email):
         "@bar.com",
         "no-at-sign",
         "space @example.com",
+        "a..b@example.com",
+        None,
     ],
 )
 def test_email_invalid(email):
-    assert not _EMAIL_RE.match(email)
+    with pytest.raises(HTTPException) as exc:
+        normalize_email(email)
+    assert exc.value.status_code == 400

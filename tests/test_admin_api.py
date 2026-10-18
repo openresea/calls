@@ -165,6 +165,7 @@ def test_export_results_works_with_named_cursor_without_description(client):
                 "2026-04-29T01:02:03+00:00",
                 encrypt_text("CSV Person"),
                 encrypt_text("+15555550123"),
+                None,  # saved before notes were encrypted
             )
         ]
     )

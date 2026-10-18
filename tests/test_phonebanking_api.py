@@ -10,8 +10,8 @@ from tests.conftest import mock_conn, mock_cursor
 ORIGIN = {"Origin": "http://testserver"}
 SESSION_COOKIE = "pb_session"
 
-_SESS_COLS = ["session_token", "volunteer_email", "display_name", "secs_since_last"]
-_SESS_ROW = ("tok-abc", "caller@example.com", "Caller", 9999)
+_SESS_COLS = ["session_token", "volunteer_email"]
+_SESS_ROW = ("tok-abc", "caller@example.com")
 
 
 @pytest.fixture(scope="module")

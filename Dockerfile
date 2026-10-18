@@ -5,6 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Bold font for the contact-name images.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
@@ -23,4 +24,6 @@ USER appuser
 ENV APP_MODULE=app.phonebanking.main:app \
     PORT=8001
 
-CMD ["sh", "-c", "exec uvicorn ${APP_MODULE} --host 0.0.0.0 --port ${PORT}"]
+# No access log: it would record every caller's IP address.
+# Set FORWARDED_ALLOW_IPS to your reverse proxy's address so rate limits see real visitors.
+CMD ["sh", "-c", "exec uvicorn ${APP_MODULE} --host 0.0.0.0 --port ${PORT} --no-access-log --no-server-header"]

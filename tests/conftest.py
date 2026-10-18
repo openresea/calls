@@ -85,13 +85,7 @@ def live_db(monkeypatch):
         settings["dbname"] = name
         conn = psycopg2.connect(**settings)
         with conn, conn.cursor() as cur:
-            for filename in [
-                "phonebanking_schema.sql",
-                "email_auth_schema.sql",
-                "survey_schema.sql",
-                "roles.sql",
-            ]:
-                cur.execute((Path("app/sql") / filename).read_text())
+            cur.execute(Path("app/sql/schema.sql").read_text())
             cur.execute(
                 "INSERT INTO pb_admin_users(email) VALUES ('admin@example.test')"
             )

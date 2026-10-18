@@ -1,17 +1,18 @@
 # Contributing
 
-Use Python 3.12 or newer, PostgreSQL 17, and the development setup in README.md. Submit focused changes with a description of the user-visible behaviour and relevant verification. Keep the licence and required notice intact.
+Thanks for your interest in Resea Calls!
 
-Use fictional contacts and reserved example email domains in fixtures, screenshots, and examples. Do not commit local `.env` files, real CSV imports, exports, database dumps, or cloud credentials. Keep organisation branding and mail-provider settings configurable.
+Bug reports and ideas are very welcome. Please open an issue, and use made-up contacts and example email addresses in anything you share.
 
-Run Ruff and the unit suite for changes; run the disposable database and browser suites for authentication, authorisation, survey, allocation, or workflow changes. Tests use role-restricted database clients; do not replace these with owner credentials to make failures disappear. Never point TEST_DATABASE_DSN at a production or shared cluster.
+We're not able to accept code contributions just yet. We first need a contributor agreement that lets us keep the project free for non-commercial use while also offering separate commercial licences. Please don't send code written by someone else without their permission.
 
-Update `requirements.in` for runtime dependency changes, then regenerate the fully hashed lock with `uv pip compile requirements.in --python-version 3.12 --generate-hashes --output-file requirements.txt`. Audit the resulting lock and verify supported Python versions. Development tools are listed separately in `requirements-dev.txt`.
+If you're working on your own copy:
 
-Preserve approval checks, exact-origin validation, shared rate limits, transaction locking, and append-only history. Explain migrations and recovery steps for schema changes; the SQL files initialise a fresh database and do not upgrade existing installations.
-
-Before a public release, check that the security contact in SECURITY.md is monitored. Before deployment, test real SMTP delivery with a controlled address, review HTTPS/proxy configuration and backups, and complete a deployment-specific security review.
-
-## Contributions and licensing
-
-Bug reports and suggestions are welcome. Code contributions are paused until a contributor agreement is in place that permits both noncommercial distribution and separate commercial licensing. Do not submit third-party code without permission from its copyright holder.
+- Use Python 3.12 or newer and PostgreSQL 17, set up as described in the README.
+- Never commit `.env` files, real contact lists, exports, database dumps or credentials.
+- Run Ruff and the quick tests. If you touch sign-in, permissions, questions, call allocation or saving calls, run the database and browser tests too, against a throwaway database (never a real or shared one).
+- The tests use the same limited database logins as the real app. Please don't switch them to an admin login to make a failure go away.
+- Keep approval checks, same-origin checks, shared rate limits, database locks and add-only history intact.
+- `app/sql/schema.sql` sets up a new database; it doesn't upgrade an existing one. If you change it, explain how existing installs should be updated.
+- To change a dependency, edit `requirements.in` and regenerate `requirements.txt` with `uv pip compile requirements.in --python-version 3.12 --generate-hashes --output-file requirements.txt`, then run `pip-audit`.
+- Keep the licence and notice files intact.
